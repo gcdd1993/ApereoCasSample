@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: cas-demoapp-1
+app:
+  authn:
+    cas:
+      prefix: http://localhost:8443/cas
+      service-prefix: http://localhost:8091
+      service: ${app.authn.cas.service-prefix}/server/login/cas
+      logout-success-url: ${app.authn.cas.service-prefix}/
+server:
+  port: 8091
+logging:
+  level:
+    "org.springframework.security.cas": debug
