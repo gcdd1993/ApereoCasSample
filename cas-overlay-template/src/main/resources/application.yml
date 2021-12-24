@@ -1,3 +1,59 @@
 # Application properties that need to be
 # embedded within the web application can be included here
 
+spring:
+  application:
+    name: cas-overlay
+#logging:
+#  level:
+#    "org.apereo.cas": debug
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      enabled: true
+cas:
+  ticket:
+    tgt:
+      timeout:
+        maxTimeToLiveInSeconds: 172800
+    registry:
+      redis:
+        host: localhost
+        port: 16379
+  webflow:
+    crypto:
+      enabled: false
+  locale:
+    defaultValue: zh_CN
+  authn:
+    accept:
+      users: ""
+    jdbc:
+      query:
+        - name: customer-user
+          order: 1
+          url: jdbc:mysql://localhost:3306/cas_sample?characterEcoding=utf-8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true
+          user: root
+          password: 123456
+          driverClass: com.mysql.cj.jdbc.Driver
+          dialect: org.hibernate.dialect.PostgreSQL95Dialect
+          sql: "SELECT * FROM customer_user WHERE username = ?" # 查询用户使用的SQL语句，PrepareStatement格式
+          fieldPassword: password # 密码字段名
+          fieldDisabled: disabled # 禁用字段名
+          fieldExpired: expired # 过期字段名
+          principalAttributeList: id,username,password,sex,married,education # 暴露到前台的字段名
+          passwordEncoder: # 密码编码器，注意，配置完毕之后，要与数据库里面的密码编码匹配，不然会解码错误，导致登录失败
+            type: PBKDF2
+            secret: "e561a4e6-c82c-11eb-b8bc-0242ac130003"
+            strength: 180000
+  server:
+    name: http://localhost:8443
+    prefix: ${cas.server.name}/cas
+# 本地测试开启，否则会报错 SSL peer shut down incorrectly
+server:
+  ssl:
+    enabled: false

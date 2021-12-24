@@ -1,233 +1,183 @@
 clone from https://github.com/apereo/cas-overlay-template
 
-# IMPORTANT NOTE<br/>******************************************************<br/>This repository is always automatically generated from the CAS Initializr. Do NOT submit pull requests here as the change-set will be overwritten on the next sync.To learn more, please visit the [CAS documentation](https://apereo.github.io/cas).<br/>******************************************************<br/>
-Apereo CAS WAR Overlay Template
-=====================================
-
-WAR Overlay Type: `cas-overlay`
-
-# Versions
-   
-
-- CAS Server `6.5.0-SNAPSHOT`
-- JDK `11`
-                     
-# Build
-
-To build the project, use:
-
-```bash
-# Use --refresh-dependencies to force-update SNAPSHOT versions
-./gradlew[.bat] clean build
-```
-
-To see what commands/tasks are available to the build script, run:
-
-```bash
-./gradlew[.bat] tasks
-```
-
-If you need to, on Linux/Unix systems, you can delete all the existing artifacts
-(artifacts and metadata) Gradle has downloaded using:
-
-```bash
-# Only do this when absolutely necessary
-rm -rf $HOME/.gradle/caches/
-```
-
-Same strategy applies to Windows too, provided you switch `$HOME` to its equivalent in the above command.
-
-# Keystore
-
-For the server to run successfully, you might need to create a keystore file.
-This can either be done using the JDK's `keytool` utility or via the following command:
-
-```bash
-./gradlew[.bat] createKeystore
-```
-
-Use the password `changeit` for both the keystore and the key/certificate entries. 
-Ensure the keystore is loaded up with keys and certificates of the server.
-
-## Extension Modules
-
-Extension modules may be specified under the `dependencies` block of the [Gradle build script](build.gradle):
-
-```gradle
-dependencies {
-    implementation "org.apereo.cas:cas-server-some-module"
-    ...
+# 依赖
+跟官方的有所区别，修改了一下
+```groovy
+if (project.hasProperty("casModules")) {
+    def dependencies = project.getProperty("casModules").split(",")
+    dependencies.each {
+        implementation("org.apereo.cas:$it")
+    }
 }
 ```
 
-To collect the list of all project modules and dependencies in the overlay:
+然后配置`gradle.properties`
 
-```bash
-./gradlew[.bat] dependencies
-```                                                                       
-
-To see a full list of all project dependencies that are available for configuration and use:
-
-```bash
-curl https://localhost:8080/dependencies
-```     
-
-Or:
-
-```bash
-curl https://localhost:8080/actuator/info
+```properties
+casModules=cas-server-support-jdbc
 ```
 
-# Deployment
+上面是引入了`cas-server-support-jdbc`这个模块，模块可以去[Maven中央仓库](https://search.maven.org/search?q=g:org.apereo.cas)查找一下
 
-On a successful deployment via the following methods, the server will be available at:
+# 配置
 
+CAS的配置比较繁杂，但是文档较为齐全，基本上配置都可以找到解释。
 
-* `https://localhost:8443/cas`
+## 配置数据库认证
 
-
-
-  
-## Executable WAR
-
-Run the server web application as an executable WAR.
-
-```bash
-java -jar build/libs/cas.war
+```yaml
+cas:
+  webflow:
+    crypto:
+      enabled: false
+  locale:
+    defaultValue: zh_CN
+  authn:
+    accept:
+      users: ""
+    jdbc:
+      query:
+        - name: customer-user
+          order: 1
+          url: jdbc:mysql://localhost:3306/cas_sample?characterEcoding=utf-8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true
+          user: root
+          password: 123456
+          driverClass: com.mysql.cj.jdbc.Driver
+          dialect: org.hibernate.dialect.PostgreSQL95Dialect
+          sql: "SELECT * FROM customer_user WHERE username = ?"
+          fieldPassword: password
+          fieldDisabled: disabled
+          fieldExpired: expired
+          principalAttributeList: id,username,password,sex,married,education
+          passwordEncoder:
+            type: PBKDF2
+            secret: "e561a4e6-c82c-11eb-b8bc-0242ac130003"
+            strength: 180000
 ```
 
-Or via:
+使用的数据库脚本
 
-```bash
-./gradlew[.bat] run
+```sql
+CREATE DATABASE cas_sample;
+
+CREATE TABLE customer_user
+(
+    id        int UNSIGNED PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+    username  varchar(20)  NOT NULL COMMENT '用户名',
+    password  varchar(255) NOT NULL COMMENT '密码',
+    sex       char(1)      NOT NULL COMMENT '性别',
+    married   boolean      NOT NULL COMMENT '婚否',
+    education tinyint      NOT NULL COMMENT '学历：1大专、2本科、3研究生、4博士、5其他',
+    tel       char(11) COMMENT '电话号码',
+    email     varchar(200) COMMENT '邮箱',
+    address   varchar(200) COMMENT '住址',
+    disabled  boolean      NOT NULL DEFAULT FALSE COMMENT '是否禁用',
+    expired   boolean      NOT NULL DEFAULT FALSE COMMENT '是否过期'
+);
+
+INSERT INTO customer_user (username, password, sex, married, education, tel, email, address)
+VALUES ('zhangsan', 'f0147cd7661ca1f3c68b660d3b7fb0ed4c56f45ffaf3fb17fa967b5e1031eedfc9e8b64622b2844b', '男', FALSE, 1,
+        '17715182604', 'zhangsan@163.com', '北京市');
+INSERT INTO customer_user (username, password, sex, married, education, tel, email, address)
+VALUES ('lisi', 'f0147cd7661ca1f3c68b660d3b7fb0ed4c56f45ffaf3fb17fa967b5e1031eedfc9e8b64622b2844b', '男', FALSE, 1,
+        '17715182605', 'zhangsan@163.com', '北京市');
+INSERT INTO customer_user (username, password, sex, married, education, tel, email, address)
+VALUES ('wangwu', 'f0147cd7661ca1f3c68b660d3b7fb0ed4c56f45ffaf3fb17fa967b5e1031eedfc9e8b64622b2844b', '男', FALSE, 1,
+        '17715182606', 'zhangsan@163.com', '北京市');
 ```
 
-Debug the CAS web application as an executable WAR:
+到这就配置完毕了，启动下试试（启动比较慢，耐心等等），看到Ready的大字，就证明启动完毕了
 
-```bash
-./gradlew[.bat] debug
-```
-       
-Or via:
+![image-20211224144322976](https://cdn.jsdelivr.net/gh/gcdd1993/image-repo@master/img/202112241443283.png)
 
-```bash
-java -Xdebug -Xrunjdwp:transport=dt_socket,address=5000,server=y,suspend=y -jar build/libs/cas.war
-```
+访问链接http://localhost:8443/cas，输入zhangsan，aaa123456，出现登录成功的提示，并且打印了我们配置的字段`id,username,password,sex,married,education`
 
-Run the CAS web application as a *standalone* executable WAR:
+![image-20211224144453142](https://cdn.jsdelivr.net/gh/gcdd1993/image-repo@master/img/202112241444223.png)
 
-```bash
-./gradlew[.bat] clean executable
-```
+## 配置Redis存储TGT
 
-## External
+上面的例子，我们登录成功后，重启服务，会失去登录信息。因为登录授权信息（可以理解为Session）是存储在内存里的，重启自然就丢失了，所以我们需要将TGT存储到Redis里面。
 
-Deploy the binary web application file in `build/libs` after a successful build to a servlet container of choice.
+1、添加模块
 
-# Docker
-
-The following strategies outline how to build and deploy CAS Docker images.
-
-## Jib
-
-The overlay embraces the [Jib Gradle Plugin](https://github.com/GoogleContainerTools/jib) to provide easy-to-use out-of-the-box tooling for
-building CAS docker images. Jib is an open-source Java containerizer from Google that lets Java developers build containers using the tools
-they know. It is a container image builder that handles all the steps of packaging your application into a container image. It does
-not require you to write a Dockerfile or have Docker installed, and it is directly integrated into the overlay.
-
-```bash
-./gradlew build jibDockerBuild
+```properties
+casModules=cas-server-support-redis-ticket-registry
 ```
 
-## Dockerfile
+2、添加配置
 
-You can also use the native Docker tooling and the provided `Dockerfile` to build and run.
-
-```bash
-chmod +x *.sh
-./docker-build.sh
-./docker-run.sh
+```yaml
+cas:
+  ticket:
+    tgt:
+      timeout:
+        maxTimeToLiveInSeconds: 172800
+    registry:
+      redis:
+        host: localhost
+        port: 16379
 ```
 
-For convenience, an additional `docker-compose.yml` is also provided to orchestrate the build:
+启动，再次登录测试，登录完毕后，重启服务。
 
-```bash  
-docker-compose build
+好像不是预想中的维持登陆态，那么我们检查下Redis吧，确实存储了CAS_TICKET
+
+![image-20211224150354788](https://cdn.jsdelivr.net/gh/gcdd1993/image-repo@master/img/202112241503840.png)
+
+
+
+## 配置RestApi
+
+[参考文档-Rest](https://apereo.github.io/cas/6.4.x/protocol/REST-Protocol.html)
+
+[参考文档-Swagger](https://apereo.github.io/cas/6.4.x/integration/Swagger-Integration.html)
+
+CAS原生的界面不太好看（丑），一般来说，满足不了业务需求，官方提供了方案，可以通过CSS来修改主题，https://apereo.github.io/cas/6.4.x/ux/User-Interface-Customization.html，不过实际上手有点麻烦，而且无法自定义一些功能。
+
+不过幸运的是，CAS支持RestfulApi，让我们可以自己搞一套前端来实现自定义界面，甚至一些CAS没有的功能，比如接入阿里云无痕验证。
+
+1、添加模块
+
+```groovy
+casModules=cas-server-support-rest
 ```
 
+不需要额外配置，引入依赖即可生效。
 
-# CAS Command-line Shell
+启动项目试试看，具体的Api可以在这里看到http://localhost:8443/cas/swagger-ui/index.html
 
-To launch into the CAS command-line shell:
+## 登录接口
 
-```bash
-./gradlew[.bat] downloadShell runShell
-```
-
-# Retrieve Overlay Resources
-
-To fetch and overlay a CAS resource or view, use:
-
-```bash
-./gradlew[.bat] getResource -PresourceName=[resource-name]
-```
-
-# Create User Interface Themes Structure
-
-You can use the overlay to construct the correct directory structure for custom user interface themes:
-
-```bash
-./gradlew[.bat] createTheme -Ptheme=redbeard
-```
-
-The generated directory structure should match the following:
+`POST {{baseUrl}}/v1/tickets`
 
 ```
-├── redbeard.properties
-├── static
-│ └── themes
-│     └── redbeard
-│         ├── css
-│         │ └── cas.css
-│         └── js
-│             └── cas.js
-└── templates
-    └── redbeard
-        └── fragments
+POST {{baseUrl}}/v1/tickets
+username:zhangsan
+password:aaa123456
+
+<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html>
+
+<head>
+	<title>201 CREATED</title>
+</head>
+
+<body>
+	<h1>TGT Created</h1>
+	<form
+		action="http://localhost:8443/cas/v1/tickets/TGT-1-b-IHMDSs5r246FCBs3JApFSDvIC2h2d8mHbeSqEK6TgKvO00Olygr5r-2TcHOjtZmX8-DESKTOP-A340AMR"
+		method="POST">Service:<input type="text" name="service" value=""><br><input type="submit" value="Submit"></form>
+</body>
+
+</html>
 ```
 
-HTML templates and fragments can be moved into the above directory structure, 
-and the theme may be assigned to applications for use.
+登录获取TGT
 
-# List Overlay Resources
- 
-To list all available CAS views and templates:
+![image-20211224155056768](https://cdn.jsdelivr.net/gh/gcdd1993/image-repo@master/img/202112241550840.png)
 
-```bash
-./gradlew[.bat] listTemplateViews
-```
 
-To unzip and explode the CAS web application file and the internal resources jar:
 
-```bash
-./gradlew[.bat] explodeWar
-```
 
-# Configuration
 
-- The `etc` directory contains the configuration files and directories that need to be copied to `/etc/cas/config`.
 
-```bash
-./gradlew[.bat] copyCasConfiguration
-```
 
-- The specifics of the build are controlled using the `gradle.properties` file.
-
-## Configuration Metadata
-
-Configuration metadata allows you to export collection of CAS properties as a report into a file 
-that can later be examined. You will find a full list of CAS settings along with notes, types, default and accepted values:
-
-```bash
-./gradlew exportConfigMetadata
-```                           
