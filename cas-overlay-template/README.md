@@ -175,9 +175,42 @@ password:aaa123456
 
 ![image-20211224155056768](https://cdn.jsdelivr.net/gh/gcdd1993/image-repo@master/img/202112241550840.png)
 
+## 服务注册
 
+https://apereo.github.io/cas/6.4.x/services/Service-Management.html
 
+单点登录，最重要的自然就是应用了，一般，一个CAS会负责多个应用
 
+我们使用本地JSON文件的形式来注册服务
+
+1、添加模块
+
+```properties
+casModules=cas-server-support-json-service-registry
+```
+
+2、添加配置
+
+```yaml
+cas:
+  serviceRegistry:
+    json:
+      location: file:/etc/cas/services
+```
+
+在本地新建文件夹`D:\etc\cas\services`，并添加文件`demo-10000001.json`，文件名不是乱起的，官方有明确的格式要求
+
+```
+JSON fileName = serviceName + "-" + serviceNumericId + ".json"
+```
+
+然后重启CAS，我们发现，启动后打印了一行日志
+
+```bash
+<Loaded [1] service(s) from [JsonServiceRegistry].>
+```
+
+![image-20211224164517546](https://cdn.jsdelivr.net/gh/gcdd1993/image-repo@master/img/202112241645685.png)
 
 
 

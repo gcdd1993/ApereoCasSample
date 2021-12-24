@@ -1,0 +1,13 @@
+# Application properties that need to be
+# embedded within the web application can be included here
+
+spring:
+  application:
+    name: cas-management-overlay
+server:
+  ssl:
+    enabled: false
+cas:
+  serviceRegistry:
+    json:
+      location: file:/etc/cas/services

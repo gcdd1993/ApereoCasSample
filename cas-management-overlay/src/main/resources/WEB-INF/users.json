@@ -1,0 +1,12 @@
+{
+  "casuser": {
+    "@class": "org.apereo.cas.mgmt.authz.json.UserAuthorizationDefinition",
+    "roles": [
+      "ROLE_USER"
+    ],
+    "permissions": [
+      "DOMAIN1",
+      "DOMAIN2"
+    ]
+  }
+}

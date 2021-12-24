@@ -16,6 +16,9 @@ management:
     health:
       enabled: true
 cas:
+  serviceRegistry:
+    json:
+      location: file:/etc/cas/services
   ticket:
     tgt:
       timeout:
